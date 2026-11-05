@@ -1,0 +1,56 @@
+{
+  "atualizadoEm": "2026-11-05T18:23:15.809Z",
+  "mega": {
+    "concurso": 3081,
+    "data": "04/11/2026",
+    "dezenas": [
+      10,
+      17,
+      42,
+      43,
+      57,
+      59
+    ],
+    "acumulou": true,
+    "proximoPremio": 55000000,
+    "dataProximo": "06/11/2026"
+  },
+  "lotofacil": {
+    "concurso": 3821,
+    "data": "04/11/2026",
+    "dezenas": [
+      1,
+      5,
+      6,
+      9,
+      10,
+      12,
+      14,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      25
+    ],
+    "acumulou": true,
+    "proximoPremio": 5000000,
+    "dataProximo": "05/11/2026"
+  },
+  "quina": {
+    "concurso": 7159,
+    "data": "04/11/2026",
+    "dezenas": [
+      20,
+      43,
+      51,
+      62,
+      69
+    ],
+    "acumulou": false,
+    "proximoPremio": 600000,
+    "dataProximo": "05/11/2026"
+  }
+}

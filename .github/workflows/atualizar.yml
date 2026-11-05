@@ -1,22 +1,23 @@
-name: Atualizar Loterias
-"on":
-  schedule:
-    - cron: '30 0 * * *'
-  workflow_dispatch:
-permissions:
-  contents: write
-jobs:
-  atualizar:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: node .github/scripts/atualizar.mjs
-      - run: |
-          git config user.name "lotterylab-bot"
-          git config user.email "bot@lotterylab.local"
-          git add resultados.json
-          git diff --cached --quiet || git commit -m "Atualizar resultados"
-          git push
+import fs from "fs";
+const urls = {
+  mega: "https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena",
+  lotofacil: "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil",
+  quina: "https://servicebus2.caixa.gov.br/portaldeloterias/api/quina"
+};
+const headers = { "User-Agent": "Mozilla/5.0", "Accept": "application/json" };
+const out = { atualizadoEm: new Date().toISOString() };
+for (const [k, url] of Object.entries(urls)) {
+  const r = await fetch(url, { headers });
+  const j = await r.json();
+  out[k] = {
+    concurso: j.numero,
+    data: j.dataApuracao,
+    dezenas: j.listaDezenas.map(Number),
+    acumulou: j.acumulado,
+    proximoPremio: j.valorEstimadoProximoConcurso,
+    proximoConcurso: j.numeroProximoConcurso,
+    dataProximo: j.dataProximoConcurso
+  };
+}
+fs.writeFileSync("resultados.json", JSON.stringify(out, null, 2));
+console.log("OK", out);

@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node .【entity-github¦canonical_name=GitHub】/scripts/atualizar.mjs
+      - run: node .github/scripts/atualizar.mjs
       - run: |
           git config user.name "lotterylab-bot"
           git config user.email "bot@lotterylab.local"

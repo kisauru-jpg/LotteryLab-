@@ -1,5 +1,5 @@
 {
-  "atualizadoEm": "2026-11-10T01:36:30.466Z",
+  "atualizadoEm": "2026-11-10T16:50:36.240Z",
   "mega": {
     "concurso": 3083,
     "data": "08/11/2026",
@@ -718,29 +718,52 @@
     ]
   },
   "lotofacil": {
-    "concurso": 3824,
-    "data": "08/11/2026",
+    "concurso": 3825,
+    "data": "09/11/2026",
     "dezenas": [
       1,
-      2,
       3,
+      4,
+      5,
+      6,
       7,
-      11,
-      12,
-      13,
+      8,
+      9,
+      10,
       14,
       15,
       17,
-      18,
       19,
-      22,
-      24,
-      25
+      20,
+      23
     ],
     "acumulou": false,
     "proximoPremio": 2000000,
-    "dataProximo": "09/11/2026",
+    "dataProximo": "10/11/2026",
     "historico": [
+      {
+        "concurso": 3825,
+        "data": "09/11/2026",
+        "dezenas": [
+          1,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          14,
+          15,
+          17,
+          19,
+          20,
+          23
+        ],
+        "soma": 161,
+        "acumulou": false
+      },
       {
         "concurso": 3824,
         "data": "08/11/2026",
@@ -1867,46 +1890,36 @@
         ],
         "soma": 230,
         "acumulou": false
-      },
-      {
-        "concurso": 3775,
-        "data": "30/08/2026",
-        "dezenas": [
-          1,
-          4,
-          5,
-          6,
-          8,
-          10,
-          11,
-          12,
-          13,
-          15,
-          17,
-          18,
-          19,
-          23,
-          25
-        ],
-        "soma": 187,
-        "acumulou": false
       }
     ]
   },
   "quina": {
-    "concurso": 7162,
-    "data": "08/11/2026",
+    "concurso": 7163,
+    "data": "09/11/2026",
     "dezenas": [
-      9,
-      29,
-      46,
-      57,
-      66
+      30,
+      47,
+      50,
+      55,
+      61
     ],
     "acumulou": true,
-    "proximoPremio": 3000000,
-    "dataProximo": "09/11/2026",
+    "proximoPremio": 3800000,
+    "dataProximo": "10/11/2026",
     "historico": [
+      {
+        "concurso": 7163,
+        "data": "09/11/2026",
+        "dezenas": [
+          30,
+          47,
+          50,
+          55,
+          61
+        ],
+        "soma": 243,
+        "acumulou": true
+      },
       {
         "concurso": 7162,
         "data": "08/11/2026",
@@ -2542,19 +2555,6 @@
           54
         ],
         "soma": 174,
-        "acumulou": true
-      },
-      {
-        "concurso": 7113,
-        "data": "09/09/2026",
-        "dezenas": [
-          1,
-          32,
-          57,
-          78,
-          80
-        ],
-        "soma": 248,
         "acumulou": true
       }
     ]

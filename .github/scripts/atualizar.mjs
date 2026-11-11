@@ -8,25 +8,38 @@ async function getJson(url){
   }catch(e){ return null; }
 }
 
+function normaliza(j, loteria, concurso){
+  if(!j) return null;
+  // Guidi: { concurso, data, dezenas: ["06","14",...] }
+  // Caixa-API Heroku: { concurso, data, dezenas: [6,14,...] }
+  // ApiLoterias: { concurso, data, dezenas: [...] }
+  let dz = j.dezenas || j.listaDezenas || j.resultado || j.dezenasSorteadasOrdemSorteio || null;
+  if(!dz || !dz.length) return null;
+  dz = dz.map(n=>parseInt(n,10)).sort((a,b)=>a-b);
+  return {
+    concurso: parseInt(j.concurso || j.numero || concurso, 10),
+    data: j.data || j.dataApuracao || '',
+    dezenas: dz,
+    acumulado: j.acumulado ?? j.acumulou ?? false,
+    proximoPremio: j.proximoPremio || j.valorEstimadoProximoConcurso || 0,
+    dataProximo: j.dataProximo || j.dataProximoConcurso || ''
+  };
+}
+
 async function busca(loteria, concurso){
-  // Só Guidi - que já funcionava antes
   const nome = loteria === 'mega' ? 'megasena' : loteria;
+  const nomeHeroku = loteria === 'mega' ? 'mega-sena' : loteria;
   const urls = [
+    `https://loteriascaixa-api.herokuapp.com/api/${nomeHeroku}/${concurso}`,
+    `https://apiloterias.com.br/app/resultado?loteria=${nome}&concurso=${concurso}`,
     `https://api.guidi.dev.br/loterias/${nome}/${concurso}`,
-    `https://api.guidi.dev.br/loterias/${nome}/ultimo`
+    `https://loteriascaixa-api.herokuapp.com/api/${nomeHeroku}/latest`
   ];
   for(const u of urls){
     const j = await getJson(u);
-    if(j && j.dezenas && j.dezenas.length){
-      return {
-        concurso: j.concurso || concurso,
-        data: j.data || '',
-        dezenas: j.dezenas.map(n=>parseInt(n,10)).sort((a,b)=>a-b),
-        acumulado: j.acumulado || false,
-        proximoPremio: j.proximoPremio || 0,
-        dataProximo: j.dataProximo || ''
-      };
-    }
+    const n = normaliza(j, loteria, concurso);
+    if(n && n.concurso === concurso) return n;
+    if(n && concurso === 0) return n;
     await new Promise(r=>setTimeout(r,200));
   }
   return null;
@@ -38,14 +51,15 @@ try{ antigo = JSON.parse(fs.readFileSync('resultados.json','utf8')); }catch(e){}
 async function processa(loteria){
   let ultimo = antigo[loteria]?.concurso || 0;
   let atual = null;
-  // tenta ultimo+1, +2
-  for(let c = ultimo+1; c <= ultimo+2; c++){
+  for(let c = ultimo+1; c <= ultimo+3; c++){
     const r = await busca(loteria, c);
     if(r && r.concurso > ultimo) atual = r;
     else break;
   }
   if(!atual){
-    atual = await busca(loteria, ultimo) || antigo[loteria];
+    // tenta o ultimo de novo em qualquer fonte
+    const r = await busca(loteria, ultimo);
+    atual = r || antigo[loteria];
   }
   if(!atual) return antigo[loteria];
   const hist = [];
@@ -65,5 +79,5 @@ try{
   fs.writeFileSync('resultados.json', JSON.stringify(out, null, 2));
   console.log('OK', mega?.concurso, lotofacil?.concurso, quina?.concurso);
 }catch(e){
-  console.log('Erro mas mantendo arquivo antigo:', e.message);
+  console.log('Erro, mantendo antigo:', e.message);
 }

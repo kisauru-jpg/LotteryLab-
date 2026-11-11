@@ -8,73 +8,59 @@ async function getJson(url){
   }catch(e){ return null; }
 }
 
-function normaliza(j, loteria, concurso){
-  if(!j) return null;
-  // Guidi: { concurso, data, dezenas: ["06","14",...] }
-  // Caixa-API Heroku: { concurso, data, dezenas: [6,14,...] }
-  // ApiLoterias: { concurso, data, dezenas: [...] }
-  let dz = j.dezenas || j.listaDezenas || j.resultado || j.dezenasSorteadasOrdemSorteio || null;
-  if(!dz || !dz.length) return null;
-  dz = dz.map(n=>parseInt(n,10)).sort((a,b)=>a-b);
-  return {
-    concurso: parseInt(j.concurso || j.numero || concurso, 10),
-    data: j.data || j.dataApuracao || '',
-    dezenas: dz,
-    acumulado: j.acumulado ?? j.acumulou ?? false,
-    proximoPremio: j.proximoPremio || j.valorEstimadoProximoConcurso || 0,
-    dataProximo: j.dataProximo || j.dataProximoConcurso || ''
-  };
-}
-
-async function busca(loteria, concurso){
-  const nome = loteria === 'mega' ? 'megasena' : loteria;
-  const nomeHeroku = loteria === 'mega' ? 'mega-sena' : loteria;
-  const urls = [
-    `https://loteriascaixa-api.herokuapp.com/api/${nomeHeroku}/${concurso}`,
-    `https://apiloterias.com.br/app/resultado?loteria=${nome}&concurso=${concurso}`,
-    `https://api.guidi.dev.br/loterias/${nome}/${concurso}`,
-    `https://loteriascaixa-api.herokuapp.com/api/${nomeHeroku}/latest`
-  ];
-  for(const u of urls){
-    const j = await getJson(u);
-    const n = normaliza(j, loteria, concurso);
-    if(n && n.concurso === concurso) return n;
-    if(n && concurso === 0) return n;
-    await new Promise(r=>setTimeout(r,200));
-  }
-  return null;
-}
-
 let antigo = {};
 try{ antigo = JSON.parse(fs.readFileSync('resultados.json','utf8')); }catch(e){}
 
-async function processa(loteria){
-  let ultimo = antigo[loteria]?.concurso || 0;
-  let atual = null;
-  for(let c = ultimo+1; c <= ultimo+3; c++){
-    const r = await busca(loteria, c);
-    if(r && r.concurso > ultimo) atual = r;
-    else break;
+function hojeBR(){
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+
+// Fonte 1: guilhermeasn GitHub (não bloqueia) - tem todas as dezenas
+// Fonte 2: resultadomega - tem data da Mega
+async function processa(loteria, arquivo){
+  const url = `https://raw.githubusercontent.com/guilhermeasn/loteria.json/master/data/${arquivo}.json`;
+  const data = await getJson(url);
+  if(!data) return antigo[loteria];
+  const concursos = Object.keys(data).map(n=>parseInt(n,10)).sort((a,b)=>a-b);
+  const ultimo = concursos[concursos.length-1];
+  const dezenas = data[String(ultimo)].map(n=>parseInt(n,10)).sort((a,b)=>a-b);
+  // data: tenta pegar do antigo se já tinha esse concurso, senão usa hoje
+  let dataSorteio = hojeBR();
+  if(antigo[loteria]?.concurso === ultimo) dataSorteio = antigo[loteria].data;
+  else {
+    const achado = (antigo[loteria]?.historico || []).find(h=>h.concurso===ultimo);
+    if(achado) dataSorteio = achado.data;
   }
-  if(!atual){
-    // tenta o ultimo de novo em qualquer fonte
-    const r = await busca(loteria, ultimo);
-    atual = r || antigo[loteria];
-  }
-  if(!atual) return antigo[loteria];
+  // historico 50 ultimos
   const hist = [];
-  for(let c = atual.concurso; c > atual.concurso-50 && c > 0; c--){
-    const r = await busca(loteria, c);
-    if(r) hist.push({ concurso: r.concurso, data: r.data, dezenas: r.dezenas, soma: r.dezenas.reduce((a,b)=>a+b,0) });
-    await new Promise(r=>setTimeout(r,120));
+  for(let i = concursos.length-1; i >= Math.max(0, concursos.length-50); i--){
+    const c = concursos[i];
+    const dz = data[String(c)].map(n=>parseInt(n,10)).sort((a,b)=>a-b);
+    let dt = dataSorteio;
+    if(c !== ultimo){
+      const a = (antigo[loteria]?.historico || []).find(h=>h.concurso===c);
+      if(a) dt = a.data;
+    }
+    hist.push({ concurso: c, data: dt, dezenas: dz, soma: dz.reduce((a,b)=>a+b,0) });
   }
-  return { concurso: atual.concurso, data: atual.data, dezenas: atual.dezenas, acumulado: atual.acumulado, proximoPremio: atual.proximoPremio, dataProximo: atual.dataProximo, historico: hist };
+  return {
+    concurso: ultimo,
+    data: dataSorteio,
+    dezenas,
+    acumulado: antigo[loteria]?.acumulado ?? false,
+    proximoPremio: antigo[loteria]?.proximoPremio || 0,
+    dataProximo: antigo[loteria]?.dataProximo || '',
+    historico: hist
+  };
 }
 
 try{
-  const mega = await processa('mega');
-  const lotofacil = await processa('lotofacil');
-  const quina = await processa('quina');
+  const mega = await processa('mega', 'megasena');
+  const lotofacil = await processa('lotofacil', 'lotofacil');
+  const quina = await processa('quina', 'quina');
   const out = { atualizadoEm: new Date().toISOString(), mega, lotofacil, quina };
   fs.writeFileSync('resultados.json', JSON.stringify(out, null, 2));
   console.log('OK', mega?.concurso, lotofacil?.concurso, quina?.concurso);

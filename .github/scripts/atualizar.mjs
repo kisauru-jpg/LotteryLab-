@@ -1,32 +1,74 @@
-import fs from "fs";
-async function tenta(url) {
-  const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" } });
-  const t = await r.text();
-  if (!t.trim().startsWith("{")) throw new Error("HTML");
-  return JSON.parse(t);
+import fs from 'node:fs';
+
+const HEADERS = { 'User-Agent': 'LotteryLab/1.0', 'Accept': 'application/json' };
+async function getJson(url){
+  const r = await fetch(url, { headers: HEADERS, cache: 'no-store' });
+  if(!r.ok) throw new Error(url+' '+r.status);
+  return r.json();
 }
-async function buscaUltimo(tipo) {
-  const j = await tenta(`https://servicebus2.caixa.gov.br/portaldeloterias/api/${tipo}`);
-  return { concurso: j.numero, data: j.dataApuracao, dezenas: j.listaDezenas.map(Number), acumulou: j.acumulado, proximoPremio: j.valorEstimadoProximoConcurso, proximoConcurso: j.numeroProximoConcurso, dataProximo: j.dataProximoConcurso };
-}
-async function buscaUm(tipo, numero) {
-  const j = await tenta(`https://servicebus2.caixa.gov.br/portaldeloterias/api/${tipo}/${numero}`);
-  return { concurso: j.numero, data: j.dataApuracao, dezenas: j.listaDezenas.map(Number), soma: j.listaDezenas.map(Number).reduce((a,b)=>a+b,0), acumulou: j.acumulado };
-}
-const out = { atualizadoEm: new Date().toISOString() };
-for (const [k, tipo] of Object.entries({ mega: "megasena", lotofacil: "lotofacil", quina: "quina" })) {
-  const ultimo = await buscaUltimo(tipo);
-  const historico = [];
-  for (let i = 0; i < 50; i++) {
-    const n = ultimo.concurso - i;
-    if (n <= 0) break;
-    try {
-      historico.push(await buscaUm(tipo, n));
-      await new Promise(r => setTimeout(r, 300));
-    } catch (e) { console.log("parou em", tipo, n); break; }
+// Tenta 【entity-Caixa¦canonical_name=Caixa】 oficial primeiro, depois Guidi
+async function busca(loteria, concurso){
+  const 【entity-caixa¦canonical_name=Caixa】 = {
+    mega: 'megasena',
+    lotofacil: 'lotofacil',
+    quina: 'quina'
+  }[loteria];
+  const urls = [
+    `https://servicebus2.caixa.gov.br/portaldeloterias/api/${caixa}/${concurso}`,
+    `https://api.guidi.dev.br/loterias/${caixa}/${concurso}`,
+    `https://api.guidi.dev.br/loterias/${caixa}/ultimo`
+  ];
+  for(const u of urls){
+    try{
+      const j = await getJson(u);
+      const dz = j.dezenas || j.listaDezenas || j.resultado || j.dezenasSorteadasOrdemSorteio;
+      if(dz && dz.length){
+        return {
+          concurso: j.numero || j.concurso || concurso,
+          data: j.dataApuracao || j.data || '',
+          dezenas: dz.map(n=>parseInt(n,10)).sort((a,b)=>a-b),
+          acumulado: j.acumulado ?? j.acumulou ?? false,
+          proximoPremio: j.valorEstimadoProximoConcurso || j.proximoPremio || 0,
+          dataProximo: j.dataProximoConcurso || ''
+        };
+      }
+    }catch(e){ /* tenta proxima fonte */ }
+    await new Promise(r=>setTimeout(r,200));
   }
-  out[k] = { ...ultimo, historico };
-  console.log("OK", k, historico.length);
+  return null;
 }
-fs.writeFileSync("resultados.json", JSON.stringify(out, null, 2));
-console.log("OK geral");
+
+let antigo = {};
+try{ antigo = JSON.parse(fs.readFileSync('resultados.json','utf8')); }catch(e){}
+
+async function processa(loteria, qtd){
+  let ultimo = antigo[loteria]?.concurso || 0;
+  // descobre o ultimo real tentando ultimo+1, +2, +3
+  let atual = null;
+  for(let c = ultimo+1; c <= ultimo+3; c++){
+    const r = await busca(loteria, c);
+    if(r) atual = r;
+    else break;
+  }
+  if(!atual){
+    // se nao achou novo, tenta buscar o ultimo conhecido de novo
+    atual = await busca(loteria, ultimo) || antigo[loteria];
+  }
+  if(!atual) return antigo[loteria];
+  // monta historico de 50 voltando do atual
+  const hist = [];
+  for(let c = atual.concurso; c > atual.concurso-50 && c > 0; c--){
+    const r = await busca(loteria, c);
+    if(r) hist.push({ concurso: r.concurso, data: r.data, dezenas: r.dezenas, soma: r.dezenas.reduce((a,b)=>a+b,0) });
+    await new Promise(r=>setTimeout(r,150));
+  }
+  return { concurso: atual.concurso, data: atual.data, dezenas: atual.dezenas, acumulado: atual.acumulado, proximoPremio: atual.proximoPremio, dataProximo: atual.dataProximo, historico: hist };
+}
+
+const mega = await processa('mega', 6);
+const lotofacil = await processa('lotofacil', 15);
+const quina = await processa('quina', 5);
+
+const out = { atualizadoEm: new Date().toISOString(), mega, lotofacil, quina };
+fs.writeFileSync('resultados.json', JSON.stringify(out, null, 2));
+console.log('OK', mega?.concurso, lotofacil?.concurso, quina?.concurso);

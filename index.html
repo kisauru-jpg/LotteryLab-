@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SorteLab</title>
+<style>
+body{margin:0;font-family:system-ui;background:#0a2e1f;color:#fff}
+header{padding:16px}
+.card{background:#123f2b;margin:12px;padding:16px;border-radius:20px}
+.tabs{display:flex;gap:8px;padding:0 12px}
+.tab{flex:1;padding:12px;border-radius:16px;border:0;font-weight:800;cursor:pointer}
+.tab.active{background:#fff;color:#0a2e1f}
+.tab.virada{background:#5a4300;color:#ffd700}
+.ball{display:inline-flex;width:42px;height:42px;border-radius:50%;align-items:center;justify-content:center;font-weight:800;margin:3px;background:#22c55e}
+.ball.loto{background:#9333ea}.ball.quina{background:#2563eb}.ball.virada{background:#f59e0b;color:#000}
+button.gen{background:#f5c542;border:0;padding:14px;border-radius:12px;font-weight:900;width:100%;cursor:pointer}
+.small{opacity:.85;font-size:13px}select{width:100%;padding:10px;border-radius:10px;border:0;margin:6px 0}
+</style>
+</head>
+<body>
+<header><div style="font-size:28px;font-weight:900">Sorte⭐Lab</div><div class="small">✅ Atualizado • SorteLab</div></header>
+<div class="tabs">
+<button class="tab active" data-t="mega">MEGA</button>
+<button class="tab" data-t="lotofacil">LOTOFÁCIL</button>
+<button class="tab" data-t="quina">QUINA</button>
+<button class="tab virada" data-t="virada">VIRADA</button>
+</div>
+<div class="card"><div id="titulo" style="font-size:22px;font-weight:900">Mega-Sena</div>
+<div class="small" id="ultimo"></div><div id="bolas" style="margin:12px 0"></div>
+<div class="small" id="info"></div><div class="small" id="hist"></div></div>
+<div class="card"><div style="font-weight:900">✨ Gerador</div>
+<select id="qtd"><option>1</option><option selected>3</option><option>5</option><option>10</option></select>
+<button class="gen" onclick="gerar()">GERAR JOGOS</button><div id="jogos"></div>
+<button class="gen" style="background:#fff;margin-top:10px" onclick="salvar()">💾 SALVAR JOGOS</button>
+<div class="small" id="salvos"></div></div>
+<div class="card"><div style="font-weight:900">📋 Conferência</div>
+<button class="gen" onclick="conferir()">CONFERIR SALVOS</button><div id="conf"></div></div>
+<script>
+const D={
+mega:{c:3084,data:"10/11/2026",n:[6,14,22,30,31,37],prox:"3085 • 12/11/2026 • R$ 20.000.000",hist:[[3084,"10/11/2026",[6,14,22,30,31,37]],[3083,"08/11/2026",[22,25,29,37,46,54]]]},
+lotofacil:{c:3826,data:"10/11/2026",n:[1,2,3,5,8,9,12,13,15,18,19,21,22,24,25],prox:"3827 • 11/11/2026 • R$ 2.000.000",hist:[[3826,"10/11/2026",[1,2,3,5,8,9,12,13,15,18,19,21,22,24,25]],[3825,"09/11/2026",[1,3,4,5,6,7,8,9,10,14,15,17,19,20,23]]]},
+quina:{c:7162,data:"08/11/2026",n:[9,29,46,57,66],prox:"7163 • 09/11/2026 • R$ 2.100.000",hist:[[7162,"08/11/2026",[9,29,46,57,66]]]},
+virada:{c:3100,data:"01/01/2027 11h",n:[],prox:"R$ 1.000.000.000 • Não acumula",hist:[[3099,"01/01/2026",[1,5,10,22,33,47]]]}
+};
+let aba='mega';
+function soma(a){return a.reduce((x,y)=>x+y,0)}
+function render(){
+const d=D[aba];
+document.getElementById('titulo').textContent=aba=='mega'?'Mega-Sena':aba=='lotofacil'?'Lotofácil':aba=='quina'?'Quina':'Mega da Virada • 3100';
+document.getElementById('ultimo').textContent=aba=='virada'?'Concurso 3100 • 01/01/2027 11h • R$ 1 bi • Não acumula':'Concurso '+d.c+' • '+d.data;
+document.getElementById('bolas').innerHTML=aba=='virada'?'<div class=small>Gere seu jogo da Virada abaixo.</div>':d.n.map(n=>'<span class="ball '+(aba=='lotofacil'?'loto':aba=='quina'?'quina':'')+'">'+String(n).padStart(2,'0')+'</span>').join('');
+document.getElementById('info').textContent=aba=='virada'?'Próximo: 3100 • R$ 1.000.000.000':'Soma: '+soma(d.n)+' • Próximo: '+d.prox;
+document.getElementById('hist').innerHTML='<b>Histórico:</b><br>'+d.hist.map(h=>'Conc. '+h[0]+' • '+h[1]+' • '+h[2].join(' - ')+' (Soma '+soma(h[2])+')').join('<br>');
+document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.t==aba));
+document.getElementById('salvos').innerHTML='<b>Salvos:</b><br>'+(JSON.parse(localStorage.getItem('sl_salvos')||'[]').map((s,i)=>(i+1)+'. '+s.join(' - ')).join('<br>')||'Nenhum salvo ainda.');
+}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{aba=b.dataset.t;render();});
+function gerar(){
+const d=D[aba];const ult=new Set(d.n);const max=aba=='lotofacil'?25:aba=='quina'?80:60;const need=aba=='lotofacil'?15:aba=='mega'||aba=='virada'?6:5;let out=[];
+for(let k=0;k<parseInt(document.getElementById('qtd').value);k++){let jogo=new Set();if(aba=='lotofacil'){let novos=[];for(let n=1;n<=25;n++)if(!ult.has(n))novos.push(n);novos.sort(()=>Math.random()-0.5);novos.slice(0,5).forEach(n=>jogo.add(n));}let t=0;while(jogo.size<need&&t<2000){t++;let n=Math.floor(Math.random()*max)+1;if(jogo.has(n))continue;if(aba!='lotofacil'&&ult.has(n))continue;if([...jogo].some(x=>Math.abs(x-n)==1))continue;jogo.add(n);}let arr=[...jogo].sort((a,b)=>a-b);if(arr.length==need)out.push(arr);}
+window._u=out;document.getElementById('jogos').innerHTML=out.map((j,i)=>'<div style="margin:8px 0;padding:10px;background:#0a2e1f;border-radius:12px">'+(i+1)+'. '+j.map(n=>'<span class="ball '+(aba=='lotofacil'?'loto':aba=='quina'?'quina':aba=='virada'?'virada':'')+'">'+String(n).padStart(2,'0')+'</span>').join('')+'</div>').join('');
+}
+function salvar(){if(!window._u)return alert('Gere primeiro');let s=JSON.parse(localStorage.getItem('sl_salvos')||'[]');window._u.forEach(j=>s.push(j));localStorage.setItem('sl_salvos',JSON.stringify(s));render();alert('Salvo!');}
+function conferir(){let s=JSON.parse(localStorage.getItem('sl_salvos')||'[]');let d=D[aba];if(!d.n.length)return document.getElementById('conf').textContent='Virada sem resultado ainda - 01/01/2027';let set=new Set(d.n);document.getElementById('conf').innerHTML=s.map((j,i)=>(i+1)+'. '+j.join(' - ')+' → '+j.filter(n=>set.has(n)).length+' acertos').join('<br>')||'Nenhum salvo.';}
+render();
+</script>
+</body>
+</html>

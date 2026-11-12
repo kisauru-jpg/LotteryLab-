@@ -8,9 +8,9 @@
 <div class="card"><div style="font-weight:900">📋 Conferência</div><button class="g" onclick="conferir()">CONFERIR SALVOS</button><div id="conf"></div></div>
 <script>
 var D={
-mega:{c:3084,data:"10/11/2026",n:[6,14,22,30,31,37],prox:"3085 • 12/11/2026 • R$ 20.000.000",hist:"Conc. 3084 • 10/11/2026 • 6-14-22-30-31-37 (Soma 140)<br>Conc. 3083 • 08/11/2026 • 22-25-29-37-46-54"},
-lotofacil:{c:3826,data:"10/11/2026",n:[1,2,3,5,8,9,12,13,15,18,19,21,22,24,25],prox:"3827 • 11/11/2026 • R$ 2.000.000",hist:"Conc. 3826 • 10/11/2026 • 1-2-3-5-8-9-12-13-15-18-19-21-22-24-25 (Soma 197)"},
-quina:{c:7162,data:"08/11/2026",n:[9,29,46,57,66],prox:"7163 • 09/11/2026 • R$ 2.100.000",hist:"Conc. 7162 • 08/11/2026 • 9-29-46-57-66"},
+mega:{c:3084,data:"10/11/2026",[STRIPPED] • 12/11/2026 • R$ 20.000.000",hist:"Conc. 3084 • 10/11/2026 • 6-14-22-30-31-37 (Soma 140)"},
+lotofacil:{c:3826,data:"10/11/2026",[STRIPPED] • 11/11/2026 • R$ 2.000.000",hist:"Conc. 3826 • 10/11/2026 • 1-2-3-5-8-9-12-13-15-18-19-21-22-24-25 (Soma 197)"},
+quina:{c:7162,data:"08/11/2026",[STRIPPED] • 09/11/2026 • R$ 2.100.000",hist:"Conc. 7162 • 08/11/2026 • 9-29-46-57-66"},
 virada:{c:3100,data:"01/01/2027 11h",n:[],prox:"3100 • R$ 1.000.000.000 • Não acumula",hist:"Conc. 3099 • 01/01/2026 • 1-5-10-22-33-47"}
 };
 var aba="mega";
@@ -20,6 +20,25 @@ function render(){var d=D[aba];document.getElementById("titulo").innerText=aba==
 function gerar(){var d=D[aba];var ult=d.n;var max=aba=="lotofacil"?25:aba=="quina"?80:60;var need=aba=="lotofacil"?15:aba=="mega"||aba=="virada"?6:5;var out=[];for(var k=0;k<parseInt(document.getElementById("qtd").value);k++){var jogo=[];if(aba=="lotofacil"){var novos=[];for(var n=1;n<=25;n++){if(ult.indexOf(n)==-1)novos.push(n);}novos.sort(function(){return Math.random()-0.5;});for(var x=0;x<5;x++)jogo.push(novos[x]);}var t=0;while(jogo.length<need&&t<2000){t++;var nn=Math.floor(Math.random()*max)+1;if(jogo.indexOf(nn)>-1)continue;if(aba!="lotofacil"&&ult.indexOf(nn)>-1)continue;var rep=false;for(var y=0;y<jogo.length;y++){if(Math.abs(jogo[y]-nn)==1)rep=true;}if(rep)continue;jogo.push(nn);}jogo.sort(function(a,b){return a-b;});if(jogo.length==need)out.push(jogo);}window._u=out;var html="";for(var i=0;i<out.length;i++){html+="<div style='margin:8px 0;padding:10px;background:#0a2e1f;border-radius:12px'>"+(i+1)+". ";for(var j=0;j<out[i].length;j++){var cls=aba=="lotofacil"?"ball loto":aba=="quina"?"ball quina":aba=="virada"?"ball vir":"ball";html+="<span class='"+cls+"'>"+("0"+out[i][j]).slice(-2)+"</span>";}html+="</div>";}document.getElementById("jogos").innerHTML=html;}
 function salvar(){if(!window._u)return alert("Gere primeiro");var s=JSON.parse(localStorage.getItem("sl_salvos")||"[]");for(var i=0;i<window._u.length;i++)s.push(window._u[i]);localStorage.setItem("sl_salvos",JSON.stringify(s));render();alert("Salvo!");}
 function conferir(){var s=JSON.parse(localStorage.getItem("sl_salvos")||"[]");var d=D[aba];if(!d.n.length){document.getElementById("conf").innerText="Virada sem resultado ainda - 01/01/2027";return;}var html="";for(var i=0;i<s.length;i++){var ac=0;for(var j=0;j<s[i].length;j++){if(d.n.indexOf(s[i][j])>-1)ac++;}html+=(i+1)+". "+s[i].join(" - ")+" → "+ac+" acertos<br>";}document.getElementById("conf").innerHTML=html||"Nenhum salvo.";}
-async function auto(){document.getElementById("status").innerText="🔄 Buscando novos concursos...";try{var urls={mega:"https://resultadomega.com.br/api/mega-sena",lotofacil:"https://resultadomega.com.br/api/lotofacil",quina:"https://resultadomega.com.br/api/quina"};for(var k in urls){try{var r=await fetch(urls[k]);if(!r.ok)continue;var j=await r.json();var dez=j.dezenas||j.numeros||j.resultado;if(!dez)continue;dez=dez.map(function(x){return parseInt(x);});var conc=j.concurso||j.numero;if(conc&&dez.length){D[k].c=parseInt(conc);D[k].data=j.data||j.data_sorteio||D[k].data;D[k].n=dez;}}catch(e){}}document.getElementById("status").innerText="✅ Atualizado • SorteLab • Tentativa de auto-update feita • "+new Date().toLocaleTimeString("pt-BR");render();}catch(e){document.getElementById("status").innerText="✅ Atualizado • SorteLab • Mostrando último salvo";render();}}
+function fmtData(dt){if(!dt)return "";if(dt.indexOf("-")>-1){var p=dt.split("-");if(p[0].length==4)return p[2]+"/"+p[1]+"/"+p[0];}return dt;}
+async function auto(){
+document.getElementById("status").innerText="🔄 Buscando...";
+var achou=0;
+// 1) Mega via resultadomega concursos.json (lista)
+try{var r=await fetch("https://resultadomega.com.br/api/concursos.json");if(r.ok){var arr=await r.json();if(Array.isArray(arr)&&arr.length){var last=arr[arr.length-1];var c=last[0];var dt=last[1];var dz=last[2].map(function(x){return parseInt(x);});if(c>D.mega.c){D.mega.c=c;D.mega.data=fmtData(dt);D.mega.n=dz;D.mega.hist="Conc. "+c+" • "+fmtData(dt)+" • "+dz.join("-")+" (Soma "+soma(dz)+")";achou++;}}}}catch(e){}
+// 2) deunobicho - mega / loto / quina
+var map={mega:"mega-sena",lotofacil:"lotofacil",quina:"quina"};
+for(var k in map){
+try{var r2=await fetch("https://deunobicho.online/api/loterias/"+map[k]);if(!r2.ok)continue;var j=await r2.json();var d=j.data||j;var dz2=d.dezenas||d.numeros||d.resultado;if(!dz2)continue;dz2=dz2.map(function(x){return parseInt(x);});var cc=parseInt(d.concurso||d.numero||0);if(cc&&cc>D[k].c){D[k].c=cc;D[k].data=fmtData(d.data||d.data_extracao||d.dataApuracao||"");D[k].n=dz2;D[k].hist="Conc. "+cc+" • "+D[k].data+" • "+dz2.join("-")+" (Soma "+soma(dz2)+")";achou++;}}catch(e){}
+}
+// 3) Guidi backup
+for(var k2 in map){
+if(k2=="mega"&&achou>0)continue;
+try{var r3=await fetch("https://api.guidi.dev.br/loterias/"+map[k2]+"/ultimo");if(!r3.ok)continue;var j3=await r3.json();var dz3=j3.dezenas||j3.numeros;if(!dz3)continue;dz3=dz3.map(function(x){return parseInt(x);});var cc3=parseInt(j3.concurso||0);if(cc3&&cc3>D[k2].c){D[k2].c=cc3;D[k2].data=fmtData(j3.dataApuracao||j3.data||"");D[k2].n=dz3;D[k2].hist="Conc. "+cc3+" • "+D[k2].data+" • "+dz3.join("-");achou++;}}catch(e){}
+}
+if(achou>0){document.getElementById("status").innerText="✅ Atualizado • SorteLab • Achou "+achou+" novo(s) • "+new Date().toLocaleTimeString("pt-BR");}
+else{document.getElementById("status").innerText="⚠️ Buscou mas não achou novo • Mostrando último salvo • "+new Date().toLocaleTimeString("pt-BR");}
+render();
+}
 render();
 </script></body></html>

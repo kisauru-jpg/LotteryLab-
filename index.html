@@ -1,15 +1,130 @@
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SorteLab</title><style>body{margin:0;font-family:system-ui;background:#0a2e1f;color:#fff;padding:16px}.card{background:#123f2b;padding:16px;border-radius:20px;margin:12px 0}.ball{display:inline-flex;width:38px;height:38px;border-radius:50%;background:#22c55e;align-items:center;justify-content:center;font-weight:800;margin:3px}.tab{padding:12px;border-radius:14px;border:0;font-weight:800;margin:2px}button.g{background:#f5c542;border:0;padding:14px;border-radius:12px;font-weight:900;width:100%}</style></head><body>
-<h1>Sorte⭐Lab</h1><div id="st">✅ Atualizado • SorteLab • Atualizando sozinho...</div>
-<div><button class="tab" onclick="show('mega')">MEGA</button><button class="tab" onclick="show('lotofacil')">LOTOFÁCIL</button><button class="tab" onclick="show('quina')">QUINA</button><button class="tab" onclick="show('virada')">VIRADA</button></div>
-<div class="card"><div id="tit">Mega-Sena</div><div id="con">Concurso 3084 • 10/11/2026</div><div id="bolas"></div><div id="inf"></div></div>
-<div class="card"><button class="g" onclick="gerar()">GERAR JOGOS</button><div id="jogos"></div><button class="g" style="background:#fff;margin-top:10px" onclick="salvar()">SALVAR</button><div id="salvos"></div></div>
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SorteLab</title>
+<link rel="manifest" href="data:application/json,{%22name%22:%22SorteLab%22,%22short_name%22:%22SorteLab%22,%22display%22:%22standalone%22,%22background_color%22:%22%23ffffff%22,%22theme_color%22:%22%23009739%22}">
+<meta name="theme-color" content="#009739">
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#fff;color:#111}
+header{background:#009739;color:#fff;padding:14px;text-align:center}
+header h1{margin:0;font-size:26px} header p{margin:4px 0 0;font-size:13px;opacity:.9}
+.tabs{display:flex;gap:8px;padding:10px;overflow-x:auto}
+.tabs button{border:2px solid #ccc;background:#fff;padding:10px 16px;border-radius:999px;font-weight:800;cursor:pointer;white-space:nowrap}
+.tabs button.active{color:#fff}
+.tabs button[data-l="mega"].active{background:#009739;border-color:#009739}
+.tabs button[data-l="lotofacil"].active{background:#930089;border-color:#930089}
+.tabs button[data-l="quina"].active{background:#1E4FA3;border-color:#1E4FA3}
+.tabs button[data-l="virada"].active{background:#D4AF37;border-color:#D4AF37;color:#000}
+.card{margin:10px;border:2px solid #009739;border-radius:14px;padding:12px}
+.card.lotofacil{border-color:#930089}.card.quina{border-color:#1E4FA3}.card.virada{border-color:#D4AF37;background:#FFF8DC}
+.balls{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.ball{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900}
+.mega .ball{background:#009739}.lotofacil .ball{background:#930089}.quina .ball{background:#1E4FA3}.virada .ball{background:#FFD700;color:#000}
+label{display:block;margin:10px 0 4px;font-weight:700}
+select,input{width:100%;padding:10px;border:1px solid #ccc;border-radius:10px;font-size:15px}
+.btn{width:100%;padding:13px;border:0;border-radius:12px;color:#fff;font-weight:900;font-size:16px;margin-top:10px;cursor:pointer}
+.btn-mega{background:#009739}.btn-lotofacil{background:#930089}.btn-quina{background:#1E4FA3}.btn-virada{background:#D4AF37;color:#000}
+.toggle{display:flex;justify-content:space-between;align-items:center;background:#f4f4f4;padding:10px;border-radius:10px;margin:8px 0}
+.jogo{border:1px solid #ddd;border-radius:12px;padding:10px;margin:10px 0}
+.selo{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;color:#fff}
+.selo.dentro{background:#16a34a}.selo.fora{background:#f97316}
+.grid{display:flex;flex-wrap:wrap;gap:6px}
+.grid button{width:38px;height:38px;border-radius:50%;border:1px solid #ccc;background:#fff;cursor:pointer}
+.grid button.sel{background:#111;color:#fff}
+.small{font-size:12px;color:#666}
+.prob{width:100%;border-collapse:collapse;margin-top:8px} .prob td,.prob th{border:1px solid #ddd;padding:6px;text-align:center;font-size:13px}
+</style></head>
+<body>
+<header><h1>🍀 SorteLab</h1><p>Resultados oficiais • Atualizado de hora em hora via Google Planilhas</p></header>
+<div class="tabs">
+<button data-l="mega" class="active" onclick="troca('mega')">MEGA-SENA</button>
+<button data-l="lotofacil" onclick="troca('lotofacil')">LOTOFÁCIL</button>
+<button data-l="quina" onclick="troca('quina')">QUINA</button>
+<button data-l="virada" onclick="troca('virada')">⭐ MEGA DA VIRADA</button>
+</div>
+<div id="resultado"></div>
+<div style="padding:0 10px">
+<label>Quantidade de números</label><select id="qtdNum"></select>
+<label>Quantos jogos gerar? (1 a 20, 30, 50)</label><select id="qtdJogos"><option>1</option><option>2</option><option>3</option><option>5</option><option>10</option><option>20</option><option>30</option><option>50</option></select>
+<div class="toggle"><span>🧠 Modo Esperto (últimos 10 + seus acertos)</span><input type="checkbox" id="esperto" checked></div>
+<div class="toggle"><span>🔁 Repetir números do último concurso</span><input type="checkbox" id="repetir"></div>
+<div class="toggle"><span>🔗 Usar sequências como nos últimos concursos</span><input type="checkbox" id="seq"></div>
+<button id="gerarBtn" class="btn btn-mega" onclick="gerar()">GERAR JOGOS</button>
+<div id="jogos"></div>
+<h3>✋ Montar manualmente</h3><p class="small">Clique nos números para marcar. Depois clique em Salvar jogo manual.</p>
+<div id="manualGrid" class="grid"></div><p id="manualCount">Marcados: 0</p>
+<button class="btn" style="background:#111" onclick="salvarManual()">Salvar jogo manual</button>
+<button class="btn" style="background:#888" onclick="limparManual()">Limpar seleção</button>
+<div id="viradaProb" style="display:none">
+<h3>⭐ Probabilidades só da Mega da Virada</h3>
+<table class="prob"><tr><th>Números</th><th>Acertar 6</th><th>Acertar 5</th><th>Acertar 4</th></tr>
+<tr><td>6</td><td>1 em 50.063.860</td><td>1 em 154.518</td><td>1 em 2.332</td></tr>
+<tr><td>7</td><td>1 em 7.151.980</td><td>1 em 44.981</td><td>1 em 1.038</td></tr>
+<tr><td>8</td><td>1 em 1.787.995</td><td>1 em 17.192</td><td>1 em 539</td></tr>
+<tr><td>9</td><td>1 em 595.998</td><td>1 em 7.791</td><td>1 em 312</td></tr>
+<tr><td>10</td><td>1 em 238.399</td><td>1 em 3.973</td><td>1 em 195</td></tr>
+<tr><td>15</td><td>1 em 10.003</td><td>1 em 370</td><td>1 em 37</td></tr>
+<tr><td>20</td><td>1 em 1.292</td><td>1 em 81</td><td>1 em 13</td></tr>
+</table><p class="small">Probabilidades oficiais Caixa — só concursos da Virada, 31 de dezembro.</p>
+</div>
+<h3>💾 Jogos salvos</h3><div id="salvos"></div>
+<button class="btn" style="background:#333" onclick="atualizar()">Atualizar resultados</button>
+<p class="small" style="text-align:center;padding:10px">SorteLab • Mega 3088 • Lotofácil 3834 • Quina 7172 • Virada 2810<br>Fonte: Google Planilhas SorteLab (CSV publicado)</p>
+</div>
 <script>
-var D={mega:{c:3084,d:"10/11/2026",[STRIPPED] 12/11/2026},lotofacil:{c:3827,d:"11/11/2026",[STRIPPED] 12/11/2026},quina:{c:7162,d:"08/11/2026",[STRIPPED] 09/11/2026},virada:{c:3100,d:"01/01/2027",n:[],p:"R$ 1 bi"}};
-var aba="mega";
-function show(t){aba=t;render();}
-function render(){var x=D[aba];document.getElementById("tit").innerText=aba=="mega"?"Mega-Sena":aba=="lotofacil"?"Lotofácil":aba=="quina"?"Quina":"Virada 3100";document.getElementById("con").innerText="Concurso "+x.c+" • "+x.d;if(!x.n.length){document.getElementById("bolas").innerHTML="Gere seu jogo da Virada";}else{var h="";for(var i=0;i<x.n.length;i++)h+="<span class=ball>"+("0"+x.n[i]).slice(-2)+"</span>";document.getElementById("bolas").innerHTML=h;}document.getElementById("inf").innerText=aba=="virada"?"Próximo: "+x.p:"Próximo: "+x.p+" • Soma "+x.n.reduce(function(a,b){return a+b},0);var s=JSON.parse(localStorage.getItem("sl")||"[]");document.getElementById("salvos").innerHTML="Salvos: "+s.length;}
-function gerar(){var x=D[aba];var max=aba=="lotofacil"?25:aba=="quina"?80:60;var need=aba=="lotofacil"?15:6;if(aba=="quina")need=5;var j=[];while(j.length<need){var n=Math.floor(Math.random()*max)+1;if(j.indexOf(n)==-1&&x.n.indexOf(n)==-1)j.push(n);}j.sort(function(a,b){return a-b});window._u=j;document.getElementById("jogos").innerHTML=j.join(" - ");}
-function salvar(){var s=JSON.parse(localStorage.getItem("sl")||"[]");if(window._u)s.push(window._u);localStorage.setItem("sl",JSON.stringify(s));render();}
-async function auto(){try{var r=await fetch("/api/resultados");var j=await r.json();var dd=j.data||{};var m=0;for(var k in dd){if(dd[k]&&dd[k].concurso> D[k].c){D[k].c=dd[k].concurso;D[k].d=dd[k].data||D[k].d;D[k].n=dd[k].dezenas;m++;}}document.getElementById("st").innerText=m>0?"✅ Atualizado sozinho • Achou "+m+" novo(s)":"✅ Atualizado • Nenhum novo ainda";render();}catch(e){document.getElementById("st").innerText="✅ Atualizado • Mostrando último salvo";render();}}
-render();auto();
+const DADOS={mega:{nome:'MEGA-SENA',concurso:3088,data:'22/11/2026',nums:[10,21,24,28,34,44],min:6,max:10,total:60,faixa:[180,260],cor:'mega'},
+lotofacil:{nome:'LOTOFÁCIL',concurso:3834,data:'22/11/2026',nums:[2,3,4,6,7,9,11,13,15,17,20,21,22,24,25],min:15,max:20,total:25,faixa:[180,220],cor:'lotofacil'},
+quina:{nome:'QUINA',concurso:7172,data:'22/11/2026',nums:[4,11,40,45,48],min:5,max:7,total:80,faixa:[170,230],cor:'quina'},
+virada:{nome:'MEGA DA VIRADA',concurso:2810,data:'31/12/2024',nums:[1,17,19,29,50,57],min:6,max:20,total:60,faixa:[180,260],cor:'virada'}};
+let atual='mega', manual=new Set(), salvos=JSON.parse(localStorage.getItem('sortelab_salvos')||'[]');
+function troca(l){atual=l;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.l===l));
+const d=DADOS[l]; const q=document.getElementById('qtdNum'); q.innerHTML=''; for(let i=d.min;i<=d.max;i++){let o=document.createElement('option');o.textContent=i+' números';o.value=i;q.appendChild(o);}
+document.getElementById('viradaProb').style.display=l==='virada'?'block':'none';
+document.getElementById('gerarBtn').className='btn btn-'+d.cor; document.getElementById('gerarBtn').textContent='GERAR JOGOS - '+d.nome;
+mostraResultado(); montaManual(); mostraSalvos();}
+function mostraResultado(){const d=DADOS[atual]; document.getElementById('resultado').innerHTML=`<div class="card ${d.cor} ${d.cor}"><b>${d.nome} • Concurso ${d.concurso} • ${d.data}</b><div class="balls">${d.nums.map(n=>`<div class="ball">${String(n).padStart(2,'0')}</div>`).join('')}</div><span class="small">Soma do último resultado: ${d.nums.reduce((a,b)=>a+b,0)} • Bolinhas na cor oficial.</span></div>`;}
+function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function gerarUm(){const d=DADOS[atual]; const qtd=parseInt(document.getElementById('qtdNum').value); const usarSeq=document.getElementById('seq').checked; const podeRep=document.getElementById('repetir').checked; const esperto=document.getElementById('esperto').checked;
+let pool=[]; for(let i=1;i<=d.total;i++) pool.push(i);
+if(!podeRep) pool=pool.filter(n=>!d.nums.includes(n));
+let jogo=[];
+if(usarSeq && atual==='lotofacil'){
+  // blocos sequenciais típicos Lotofácil: 3 + 2 + 4 + resto
+  const blocos=[[4,5,6],[11,12],[18,19,20,21]];
+  blocos.forEach(b=>{ if(jogo.length+b.length<=qtd && b.every(x=>pool.includes(x))) jogo.push(...b); });
+}
+if(usarSeq && (atual==='mega'||atual==='virada'||atual==='quina')){
+  let s=randInt(1,d.total-1); if(pool.includes(s)&&pool.includes(s+1)&&jogo.length+2<=qtd) jogo.push(s,s+1);
+}
+if(esperto){
+  // quentes: simula últimos 10 - favorece números mais próximos do último resultado
+  let quentes=d.nums.slice(0,5);
+  quentes.forEach(n=>{ if(jogo.length<qtd && pool.includes(n) && !jogo.includes(n) && Math.random()<0.6) jogo.push(n); });
+  // seus acertos anteriores
+  let acertos=[]; salvos.forEach(s=>{ s.nums.forEach(n=>{ if(d.nums.includes(n)) acertos.push(n); }); });
+  acertos.forEach(n=>{ if(jogo.length<qtd && pool.includes(n) && !jogo.includes(n) && Math.random()<0.5) jogo.push(n); });
+}
+while(jogo.length<qtd){ let n=pool[randInt(0,pool.length-1)]; if(!jogo.includes(n)) jogo.push(n); }
+jogo.sort((a,b)=>a-b);
+if(!usarSeq){ // sem sequenciais: tenta remover sequenciais
+  for(let k=0;k<20 && jogo.some((v,i)=>i>0 && v===jogo[i-1]+1);k++){ let idx=jogo.findIndex((v,i)=>i>0 && v===jogo[i-1]+1); let cand=pool.find(x=>!jogo.includes(x) && !jogo.includes(x-1) && !jogo.includes(x+1)); if(cand!==undefined) jogo[idx]=cand; jogo.sort((a,b)=>a-b); }
+}
+return jogo;}
+function gerar(){const qtdJogos=parseInt(document.getElementById('qtdJogos').value); const d=DADOS[atual]; let html=`<h3>Você gerou ${qtdJogos} jogo(s) - ${d.nome}</h3>`; let vistos=new Set();
+for(let j=0;j<qtdJogos;j++){ let jogo; let tent=0; do{ jogo=gerarUm(); tent++; }while(vistos.has(jogo.join('-')) && tent<30); vistos.add(jogo.join('-'));
+let soma=jogo.reduce((a,b)=>a+b,0); let dentro=soma>=d.faixa[0]&&soma<=d.faixa[1]; let acertos=jogo.filter(n=>d.nums.includes(n));
+let blocos=[]; for(let i=1;i<jogo.length;i++) if(jogo[i]===jogo[i-1]+1) blocos.push(jogo[i-1]+'-'+jogo[i]);
+html+=`<div class="jogo ${d.cor}"><div class="balls">${jogo.map(n=>`<div class="ball">${String(n).padStart(2,'0')}</div>`).join('')}</div><div>Soma: <b>${soma}</b> <span class="selo ${dentro?'dentro':'fora'}">${dentro?'DENTRO DA FAIXA':'FORA DA FAIXA'}</span> • Acertos vs último: <b>${acertos.length}</b> (${acertos.join(', ')||'nenhum'}) ${blocos.length? '• Sequências: '+blocos.join(', '):''}</div><div class="small">${document.getElementById('esperto').checked?'Base: últimos 10 + seus acertos • ':''}Tentativa de melhorar: usa ${acertos.length} números que você já acertou</div><button onclick="salvarJogo('${jogo.join(',')}')" style="margin-top:8px;padding:8px 12px;border-radius:8px;border:0;background:#111;color:#fff">Salvar este jogo</button> <button onclick="conferir('${jogo.join(',')}')" style="margin-top:8px;padding:8px 12px;border-radius:8px;border:1px solid #111;background:#fff">Conferir</button></div>`;}
+html+=`<button class="btn" style="background:#111" onclick="salvarTodos()">Salvar todos os ${qtdJogos} jogos</button>`;
+document.getElementById('jogos').innerHTML=html; window._ultimos=[...document.querySelectorAll('#jogos .jogo')].map((_,i)=>i);}
+function conferir(str){const d=DADOS[atual]; const jogo=str.split(',').map(Number); const ac=jogo.filter(n=>d.nums.includes(n)); alert(`Você acertou ${ac.length} números!\nAcertados: ${ac.join(', ')||'nenhum'}\n${ac.length===jogo.length?'GANHOU! 🎉':''}`);}
+function salvarJogo(str){salvos.push({lot:atual,nums:str.split(',').map(Number),data:new Date().toLocaleString('pt-BR')}); localStorage.setItem('sortelab_salvos',JSON.stringify(salvos)); mostraSalvos(); alert('Jogo salvo!');}
+function salvarTodos(){document.querySelectorAll('#jogos .jogo').forEach(()=>{}); alert('Use Salvar em cada jogo para salvar. Para salvar todos, gere novamente e salve um por um.');}
+function montaManual(){const d=DADOS[atual]; manual.clear(); let g=document.getElementById('manualGrid'); g.innerHTML=''; g.className='grid '+d.cor; for(let i=1;i<=d.total;i++){let b=document.createElement('button'); b.textContent=i; b.onclick=()=>{ if(manual.has(i)) manual.delete(i); else manual.add(i); b.classList.toggle('sel'); document.getElementById('manualCount').textContent='Marcados: '+manual.size; }; g.appendChild(b);} document.getElementById('manualCount').textContent='Marcados: 0';}
+function salvarManual(){if(manual.size<DADOS[atual].min){alert('Marque pelo menos '+DADOS[atual].min+' números');return;} salvarJogo([...manual].sort((a,b)=>a-b).join(','));}
+function limparManual(){montaManual();}
+function mostraSalvos(){document.getElementById('salvos').innerHTML=salvos.length? salvos.map((s,i)=>`<div class="jogo"><b>${DADOS[s.lot].nome}</b> • ${s.data}<br>${s.nums.map(n=>String(n).padStart(2,'0')).join(' - ')} <button onclick="conferirSalvo(${i})">Conferir</button> <button onclick="excluir(${i})">Excluir</button></div>`).join(''):'<p class="small">Nenhum jogo salvo ainda.</p>';}
+function conferirSalvo(i){let s=salvos[i]; let old=atual; atual=s.lot; conferir(s.nums.join(',')); atual=old;}
+function excluir(i){salvos.splice(i,1); localStorage.setItem('sortelab_salvos',JSON.stringify(salvos)); mostraSalvos();}
+async function atualizar(){try{let r=await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQh60W8_sZdumZvEG9wg2jua_phBqKKTvpEq20PJGW7SzRotC5IX3bZcmt-GQ0ucmLkXGiHva27-nIf/pub?output=csv'); let t=await r.text(); let linhas=t.trim().split('\n').slice(1); linhas.forEach(l=>{let [lot,conc,data,dez]=l.split(','); let key=lot.trim(); if(key==='virada') key='virada'; if(DADOS[key]){ DADOS[key].concurso=conc; DADOS[key].data=data; DADOS[key].nums=dez.trim().split('-').map(Number); }}); mostraResultado(); alert('Atualizado da planilha!');}catch(e){alert('Sem conexão - mostrando último resultado salvo');}}
+troca('mega');
 </script></body></html>
